@@ -4,7 +4,7 @@ clear all;
 
 hold on;
 
-r = LinearUR3;
+r = Thor;
 
 workspace = [-2000,2000,-2000, 2000, -2000, 2000];
 
