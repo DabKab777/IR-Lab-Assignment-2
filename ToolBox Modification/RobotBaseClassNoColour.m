@@ -195,7 +195,7 @@ function PlotAndColourRobot(self)
 
     % Set all links to gray color
     for linkIndex = 0:self.model.n
-        h.link(linkIndex+1).Children.FaceColor = [0.5, 0.5, 0.5];
+        h.link(linkIndex+1).Children.FaceColor = [0.6350 0.0780 0.1840];
     end
    
     drawnow();

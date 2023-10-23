@@ -1,5 +1,0 @@
-
-
-workspace = [-2000,2000,-2000, 2000, -2000, 2000];
-
-h2 = PlaceObject('SimpleConveyer.ply', [0, 0, 0]);
