@@ -1,0 +1,36 @@
+function moveCans(distance)
+    global RedCanPosition BlueCanPosition GreenCanPosition;
+    global RedCan BlueCan GreenCan;
+        delete(RedCan);
+        delete(BlueCan);
+        delete(GreenCan);
+    % Speed of the cans in m/s
+    speed = 0.2;
+
+    % Time step for visualization
+    dt = 0.01; % You can change this to modify the smoothness of the movement
+
+    % Calculate total time required based on speed and distance
+    totalTime = distance / speed;
+
+    % Current time
+    currentTime = 0;
+
+    while currentTime < totalTime
+        % Move each can by a little bit
+        RedCanPosition(1) = RedCanPosition(1) - speed*dt;
+        BlueCanPosition(1) = BlueCanPosition(1) - speed*dt;
+        GreenCanPosition(1) = GreenCanPosition(1) - speed*dt;
+
+        % Delete the previous cans and draw at the new positions
+        delete(RedCan);
+        delete(BlueCan);
+        delete(GreenCan);
+        RedCan = PlaceObject('RedCan.ply', RedCanPosition);
+        BlueCan = PlaceObject('BlueCan.ply', BlueCanPosition);
+        GreenCan = PlaceObject('GreenCan.ply', GreenCanPosition);
+
+        pause(dt);
+        currentTime = currentTime + dt;
+    end
+end

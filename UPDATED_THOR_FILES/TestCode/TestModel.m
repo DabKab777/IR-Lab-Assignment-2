@@ -16,7 +16,7 @@ EmergencyStop = PlaceObject('emergencyStopWallMounted.ply', [1,2.14,1.5]);
 InductedWorker = PlaceObject('personMaleConstruction.ply', [-3,0, 0]);
 UninductedWorker = PlaceObject('personMaleCasual.ply', [-2.5,-2, 0]);
 
-RedCan = PlaceObject('RedCanV2.ply', [1 ,0, 0.6]);
+RedCan = PlaceObject('RedCan.ply', [1 ,0, 0.6]);
 % workspace = [-2 2  -2 2  0 5 ];
 
 robot_pos = r.model.getpos();
