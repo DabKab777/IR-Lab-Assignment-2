@@ -10,7 +10,7 @@ r = Thor( transl(0 , 0 , 0.5) * trotz(-90,"deg"));
 % global RedCan BlueCan GreenCan;
 global RedCanPosition BlueCanPosition GreenCanPosition; % Declare them as global here
 % Initial position of the RedCan
-RedCanPosition = [1 ,0, 0.55];
+RedCanPosition = [0.4 ,0, 0.55];
 BlueCanPosition = [1.1 ,0, 0.55];
 GreenCanPosition = [1.2 ,0, 0.55];
 

@@ -7,6 +7,7 @@ hold on;
 surf([-0.5,-0.5;2,2],[-1,1;-1,1],[0,0; 0,0], 'CData', imread('concrete.jpg'), 'FaceColor', 'texturemap');
 conveyer = PlaceObject('Conveyer.ply', [1, 0, 0.5]);
 r = Thor( transl(0 , 0 , 0.5) * trotz(-90,"deg"));
+d = DobotMagician( transl(-0.7 , 0 , 0.5) * trotz(-90,"deg"));
 Scene = initializeScene();
 
 
