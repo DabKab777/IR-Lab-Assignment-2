@@ -6,14 +6,17 @@ hold on;
 % Initialize the scene
 surf([-0.5,-0.5;2,2],[-1,1;-1,1],[0,0; 0,0], 'CData', imread('concrete.jpg'), 'FaceColor', 'texturemap');
 conveyer = PlaceObject('Conveyer.ply', [1, 0, 0.5]);
-d = UR3; %(transl(0 , 0 , 0.5) * trotz(-90,"deg"));
+r = Thor(transl(0 , 0 , 0.5) * trotz(-90,"deg"));
+r.model.teach();
 % d = DobotMagician(transl(-0.7 , 0 , 0.5) * trotz(-90,"deg"));
 Scene = initializeScene();
 
 % Main processing loop
 for i = 1:12 % For all cans
     % Thor picks up the can and places it behind
-    ThorPickupAndPlace(Scene, i);
+    % VARRR = r.model.getpos();
+    % disp(VARRR);
+    % ThorPickupAndPlace(r, Scene, i);
 
     % Move the cans
     % moveCans(Scene, 0.2); % move other cans closer to Thor while Dobot is working
@@ -24,7 +27,7 @@ end
 
 function Scene = initializeScene()
     % The starting position for the first can
-    startPos = [0.4 ,0, 0.55];
+    startPos = [0.3 ,0, 0.55];
     
     % Initialize empty cell arrays for the cans and their positions
     Scene.Cans = cell(1,12);
@@ -47,37 +50,52 @@ function Scene = initializeScene()
     end
 end
 
-function ThorPickupAndPlace(Scene, canNumber)
+function ThorPickupAndPlace(r, Scene, canNumber)
     % Get the current joint configuration as an initial guess
     Q0 = r.model.getpos();
+    Q1 = deg2rad([90, 22, -147, 0, 36]);
+    % disp(Q0);
 
     % Determine the pickup position of the can
-    canPickupPos = transl(Scene.CanPositions{canNumber}) * trotx(pi);
-    
+    canPickupPos = transl(0.3 ,0, 0.55);
+    % disp(canPickupPos);
+
     % Determine the position to deposit the can behind
-    canDepositPos = transl(-0.4, 0, 0.55) * trotx(pi);
-    
+    canDepositPos = transl(-0.3, 0, 0.55);
+    % disp(canDepositPos);
+
     % Compute IK for pickup position using r.model.ikcon with initial guess Q0
-    pick_q = r.model.ikcon(canPickupPos, Q0);
-    
-    % Move to above the can first, then move down to grip the can
-    r.model.animate(pick_q);
-    
-    % Simulate pause (to account for any action like magnet activation)
-    pause(0.5); % Wait for half a second
+    pick_q = r.model.ikcon(canPickupPos, Q1);
     
     % Compute IK for deposit position with the last joint configuration as the new initial guess
-    deposit_q = r.model.ikcon(canDepositPos, pick_q);
+    deposit_q = r.model.ikcon(canDepositPos);
     
-    % Move to deposit the can
-    r.model.animate(deposit_q);
+    % Number of trajectory points
+    t = 200;
+    
+    % Calculate the trajectories from current position to pickup and from pickup to deposit
+    qMatrix_pick = jtraj(Q0, pick_q, t);
+    qMatrix_deposit = jtraj(pick_q, deposit_q, t);
+
+    % Animate the robot moving to pick up the can
+    for j = 1:t
+        r.model.animate(qMatrix_pick(j,:));
+        drawnow;
+        pause(0.05);
+    end
+    
+    % Simulate pause (to account for any action like magnet activation)
+    pause(1);
+    
+    % Animate the robot moving to deposit the can
+    for j = 1:t
+        r.model.animate(qMatrix_deposit(j,:));
+        drawnow;
+        pause(0.05);
+    end
     
     % Simulate pause (to account for any action like magnet deactivation)
-    pause(0.5); % Wait for half a second
-    
-    % Move back to an initial/neutral position if needed
-    % neutral_q = [desired joint angles];
-    % r.model.animate(neutral_q);
+    pause(1);
 end
 
 
