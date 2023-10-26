@@ -7,7 +7,7 @@ hold on;
 surf([-5,-5;4,4],[-3,3;-3,3],[0,0; 0,0], 'CData', imread('concrete.jpg'), 'FaceColor', 'texturemap');
 conveyer = PlaceObject('Conveyer.ply', [0.9, 0, 0.5]);
 r = Thor(transl(0 , 0 , 0.5) * trotz(-90,"deg"));
-d = DobotMagician(transl(-0.55 , 0 , 0.6));
+d = DobotMagician(transl(-0.55 , 0 , 0.5) * trotz(-90,"deg"));
 table1 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [-0.6,0, 0]);
 table2 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [1.35,0, 0]);
 fence = PlaceObject('fenceAssemblyGreenRectangle4x8x2.5m.ply', [0,1,-1]);
@@ -17,6 +17,7 @@ InductedWorker = PlaceObject('personMaleConstruction.ply', [-3,0, 0]);
 UninductedWorker = PlaceObject('personMaleCasual.ply', [-2.5,-2, 0]);
 Scene = initializeScene();
 
+% d.model.teach();
 % Main processing loop
 for i = 1:9 % For all cans
     ThorPickupAndPlace(r, Scene, i);
@@ -72,11 +73,12 @@ function ThorPickupAndPlace(r, Scene, canNumber)
         transl(0.25 ,0, 0.85) * trotx(pi),  % Lift up from can
         transl(-0.25, 0, 0.8) * troty(pi),  % Above deposit
         transl(-0.29, 0, 0.7) * troty(pi),  % Go to deposit
-        transl(-0.25, 0, 0.8) * troty(pi)   % Move up from deposit
+        transl(-0.25, 0, 0.8) * troty(pi),   % Move up from deposit
+        transl(0.25 ,0, 0.9) * trotx(pi)
     };
     
     % Initial guesses for each movement
-    initial_guesses = {Q1, Q1, Q1, Q2, Q2, Q2};
+    initial_guesses = {Q1, Q1, Q1, Q2, Q2, Q2, Q1};
 
     % Number of trajectory points
     t = 15;
@@ -97,7 +99,7 @@ function ThorPickupAndPlace(r, Scene, canNumber)
         qMatrix = jtraj(start_q, end_q, t);
 
         % Animate the robot moving to the position
-        if i == 1 || i == 2 || i == 6 
+        if i == 1 || i == 2 || i == 6 || i == 7
             for j = 1:t
                 r.model.animate(qMatrix(j,:));
                 drawnow;
@@ -136,12 +138,12 @@ function DobotPickupAndDeposit(d, Scene, canNumber)
 
     % Sequence of positions for Thor's movements based on your cycle
     positions = {
-        transl(-0.25, 0, 0.8),   % Above Pickup
-        transl(-0.29, 0, 0.7),   % Go to Pickup
-        transl(-0.25, 0, 0.8),   % Move up from pickup
-        transl(-0.9 , 0, 0.8),   % Move to Deposit 
+        transl(-0.25, 0, 0.75) * trotz(pi),   % Above Pickup
+        transl(-0.29, 0, 0.7) * trotz(pi),   % Go to Pickup
+        transl(-0.25, 0, 0.75) * trotz(pi),   % Move up from pickup
+        transl(-0.9 , 0, 0.75),   % Move to Deposit 
         transl(-0.9 , 0, 0.7),   % Move Down to deposit
-        transl(-0.9 , 0, 0.8)    % move to above deposit
+        transl(-0.9 , 0, 0.75)    % move to above deposit
     };
     
     % Initial guesses for each movement
@@ -175,7 +177,7 @@ function DobotPickupAndDeposit(d, Scene, canNumber)
                 d.model.animate(qMatrix(j,:));
                 CurrentPos = d.model.getpos;
                 T = d.model.fkine(CurrentPos);
-                trVerts = [Scene.CanVertices{canNumber},ones(size(Scene.CanVertices{canNumber},1),1)] * (T.T * transl(-0.27,0,-0.7) )';
+                trVerts = [Scene.CanVertices{canNumber},ones(size(Scene.CanVertices{canNumber},1),1)] * (T.T * transl(-0.27,0,-0.75) )';
                 % set(Scene.CanVertices{canNumber},'Vertices',trVerts(:,1:3));
                 set(Scene.CanObjects{canNumber},'Vertices',trVerts(:,1:3));
                 drawnow;
