@@ -27,7 +27,7 @@ end
 
 function Scene = initializeScene()
     % The starting position for the first can
-    startPos = [0.3 ,0, 0.55];
+    startPos = [0.25 ,0, 0.55];
     
     % Initialize empty cell arrays for the cans and their positions
     Scene.Cans = cell(1,12);
