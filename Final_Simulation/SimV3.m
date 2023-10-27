@@ -244,10 +244,10 @@ function Scene = DobotPickupAndDeposit(d, Scene, canNumber)
                 CurrentPos = d.model.getpos;
                 T = d.model.fkine(CurrentPos);
 
-                zOffsetIncrement = 0.15;
-                zBaseOffset = -0.75; % This is your initial z-offset
-                adjustedZOffset = zBaseOffset + (canNumber - 1) * zOffsetIncrement;
-                trVerts = [Scene.CanVertices{canNumber}, ones(size(Scene.CanVertices{canNumber}, 1), 1)] * (T.T * transl(-0.27, 0, adjustedZOffset))';
+                xOffsetIncrement = -0.15;
+                xBaseOffset = -0.27; % This is your initial z-offset
+                adjustedXOffset = xBaseOffset + (canNumber - 1) * xOffsetIncrement;
+                trVerts = [Scene.CanVertices{canNumber}, ones(size(Scene.CanVertices{canNumber}, 1), 1)] * (T.T * transl(adjustedXOffset, 0, -0.75))';
                 % trVerts = [Scene.CanVertices{canNumber},ones(size(Scene.CanVertices{canNumber},1),1)] * (T.T * transl(-0.27,0,-0.75) )';
                 % set(Scene.CanVertices{canNumber},'Vertices',trVerts(:,1:3));
                 set(Scene.CanObjects{canNumber},'Vertices',trVerts(:,1:3));
