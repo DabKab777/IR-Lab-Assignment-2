@@ -68,16 +68,6 @@ function Scene = ThorPickupAndPlace(r, Scene, canNumber)
     Q1 = deg2rad([90, 73.2, -171, 0, 0]);
     Q2 = deg2rad([-90, 73.2, -171, 0, 0]);
 
-    % Sequence of positions for Thor's movements based on your cycle
-    % positions = {
-    %     transl(0.25 ,0, 0.85) * trotx(pi),  % Above can
-    %     transl(0.27 ,0, 0.75) * trotx(pi),  % Down to can
-    %     transl(0.25 ,0, 0.85) * trotx(pi),  % Lift up from can
-    %     transl(-0.25, 0, 0.8) * troty(pi),  % Above deposit
-    %     transl(-0.29, 0, 0.7) * troty(pi),  % Go to deposit
-    %     transl(-0.25, 0, 0.8) * troty(pi),   % Move up from deposit
-    %     transl(0.25 ,0, 0.9) * trotx(pi)
-    % };
     canPosition = Scene.CanPositions{canNumber};
     positions = {
     transl(canPosition(1) - 0.02, 0, 0.85) * trotx(pi),  % Above can
@@ -123,22 +113,12 @@ function Scene = ThorPickupAndPlace(r, Scene, canNumber)
                 r.model.animate(qMatrix(j,:));
                 CurrentPos = r.model.getpos;
                 T = r.model.fkine(CurrentPos);
-                canPosition = Scene.CanPositions{canNumber};
-
 
                 zOffsetIncrement = 0.15;
                 zBaseOffset = 0.27; % This is your initial z-offset
                 adjustedZOffset = zBaseOffset + (canNumber - 1) * zOffsetIncrement;
                 trVerts = [Scene.CanVertices{canNumber}, ones(size(Scene.CanVertices{canNumber}, 1), 1)] * (T.T * transl(-0.5, 0, adjustedZOffset) * troty(pi/2))';
 
-
-                % offsetX = canPosition(1) - 0.77;  % Adjust the offset value based on your requirement
-                % offsetZ = canPosition(1) 
-                % trVerts = [Scene.CanVertices{canNumber}, ones(size(Scene.CanVertices{canNumber}, 1), 1)] * (T.T * transl(offsetX, 0, 0.27) * troty(pi/2))';
-
-
-                % trVerts = [Scene.CanVertices{canNumber},ones(size(Scene.CanVertices{canNumber},1),1)] * (T.T * transl(-0.5,0,0.27) * troty(pi/2))';
-                % set(Scene.CanVertices{canNumber},'Vertices',trVerts(:,1:3));
                 set(Scene.CanObjects{canNumber},'Vertices',trVerts(:,1:3));
                 drawnow;
                 pause(0.05);
@@ -245,11 +225,10 @@ function Scene = DobotPickupAndDeposit(d, Scene, canNumber)
                 T = d.model.fkine(CurrentPos);
 
                 xOffsetIncrement = -0.15;
-                xBaseOffset = -0.27; % This is your initial z-offset
+                xBaseOffset = -0.27; % This is your initial x-offset
                 adjustedXOffset = xBaseOffset + (canNumber - 1) * xOffsetIncrement;
                 trVerts = [Scene.CanVertices{canNumber}, ones(size(Scene.CanVertices{canNumber}, 1), 1)] * (T.T * transl(adjustedXOffset, 0, -0.75))';
-                % trVerts = [Scene.CanVertices{canNumber},ones(size(Scene.CanVertices{canNumber},1),1)] * (T.T * transl(-0.27,0,-0.75) )';
-                % set(Scene.CanVertices{canNumber},'Vertices',trVerts(:,1:3));
+
                 set(Scene.CanObjects{canNumber},'Vertices',trVerts(:,1:3));
                 drawnow;
                 pause(0.05);
