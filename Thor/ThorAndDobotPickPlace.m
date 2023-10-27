@@ -4,10 +4,17 @@ clear all;
 hold on;
 
 % Initialize the scene
-surf([-1,-1;2,2],[-1,1;-1,1],[0,0; 0,0], 'CData', imread('concrete.jpg'), 'FaceColor', 'texturemap');
+surf([-5,-5;4,4],[-3,3;-3,3],[0,0; 0,0], 'CData', imread('concrete.jpg'), 'FaceColor', 'texturemap');
 conveyer = PlaceObject('Conveyer.ply', [0.9, 0, 0.5]);
 r = Thor(transl(0 , 0 , 0.5) * trotz(-90,"deg"));
 d = DobotMagician(transl(-0.55 , 0 , 0.6));
+table1 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [-0.6,0, 0]);
+table2 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [1.35,0, 0]);
+fence = PlaceObject('fenceAssemblyGreenRectangle4x8x2.5m.ply', [0,1,-1]);
+FireExt = PlaceObject('fireExtinguisherElevated.ply', [-3,1.2,0.5]);
+EmergencyStop = PlaceObject('emergencyStopWallMounted.ply', [1,2.14,1.5]);
+InductedWorker = PlaceObject('personMaleConstruction.ply', [-3,0, 0]);
+UninductedWorker = PlaceObject('personMaleCasual.ply', [-2.5,-2, 0]);
 Scene = initializeScene();
 
 % Main processing loop
