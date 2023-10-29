@@ -8,13 +8,17 @@ surf([-5,-5;4,4],[-3,3;-3,3],[0,0; 0,0], 'CData', imread('concrete.jpg'), 'FaceC
 conveyer = PlaceObject('Conveyer.ply', [0.9, 0, 0.5]);
 r = Thor(transl(0 , 0 , 0.5) * trotz(-90,"deg"));
 d = DobotMagician(transl(-0.55 , 0 , 0.5) * trotz(-90,"deg"));
-table1 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [-0.6,0, 0]);
+table1 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [0.4,0, 0]);
 table2 = PlaceObject('tableBrown2.1x1.4x0.5m.ply', [1.35,0, 0]);
 fence = PlaceObject('fenceAssemblyGreenRectangle4x8x2.5m.ply', [0,1,-1]);
 FireExt = PlaceObject('fireExtinguisherElevated.ply', [-3,1.2,0.5]);
 EmergencyStop = PlaceObject('emergencyStopWallMounted.ply', [1,2.14,1.5]);
 InductedWorker = PlaceObject('personMaleConstruction.ply', [-3,0, 0]);
 UninductedWorker = PlaceObject('personMaleCasual.ply', [-2.5,-2, 0]);
+
+Redbin = PlaceObject('RedBin.ply', [-0.8, 0.18, 0.45]);
+Bluebin = PlaceObject('BlueBin.ply', [-0.8, 0, 0.45]);
+Greenbin = PlaceObject('GreenBin.ply', [-0.8, -0.18, 0.45]);
 
 Scene = initializeScene();
 % Main processing loop
@@ -23,9 +27,13 @@ for i = 1:9 % For all cans
 
     % Dobot picks up the can placed by Thor and deposits it based on color
     Scene = DobotPickupAndDeposit(d, Scene, i);
+    
+    Scene = cans_falling(Scene, i);
 
     % Move the cans
     Scene = moveCans(Scene, 0.15, i); % move other cans closer to Thor while Dobot is working
+
+    % Scene = cans_falling(Scene, i);
 end
 
 function Scene = initializeScene()
@@ -177,23 +185,50 @@ end
 
 function Scene = DobotPickupAndDeposit(d, Scene, canNumber)
 
-    % Get the current joint configuration as an initial guess
+    % % Get the current joint configuration as an initial guess
+    % Q0 = d.model.getpos();
+    % Q1 = deg2rad([90, 73.2, -171, 0, 0]);
+    % Q2 = deg2rad([-90, 73.2, -171, 0, 0]);
+    % 
+    % % Sequence of positions for Thor's movements based on your cycle
+    % positions = {
+    %     transl(-0.25, 0, 0.75) * trotz(pi),   % Above Pickup
+    %     transl(-0.29, 0, 0.7) * trotz(pi),   % Go to Pickup
+    %     transl(-0.25, 0, 0.75) * trotz(pi),   % Move up from pickup
+    %     transl(-0.9 , 0, 0.75),   % Move to Deposit 
+    %     transl(-0.9 , 0, 0.7),   % Move Down to deposit
+    %     transl(-0.9 , 0, 0.75)    % move to above deposit
+    % };
+    
+        % Get the current joint configuration as an initial guess
     Q0 = d.model.getpos();
     Q1 = deg2rad([90, 73.2, -171, 0, 0]);
     Q2 = deg2rad([-90, 73.2, -171, 0, 0]);
+    
+    % Get the color of the can for deposition decision
+    color = mod(canNumber-1, 3) + 1; % 1 for Red, 2 for Green, 3 for Blue
 
-    % Sequence of positions for Thor's movements based on your cycle
+    % Define deposit locations based on the can's color
+    if color == 1 % Red
+        depositLocation = transl(-0.8, 0.18, 0.7);
+    elseif color == 2 % Green
+        depositLocation = transl(-0.8, -0.18, 0.7);
+    else % Blue
+        depositLocation = transl(-0.8, 0, 0.7);
+    end
+
+    % Sequence of positions for Dobot's movements
     positions = {
         transl(-0.25, 0, 0.75) * trotz(pi),   % Above Pickup
         transl(-0.29, 0, 0.7) * trotz(pi),   % Go to Pickup
         transl(-0.25, 0, 0.75) * trotz(pi),   % Move up from pickup
-        transl(-0.9 , 0, 0.75),   % Move to Deposit 
-        transl(-0.9 , 0, 0.7),   % Move Down to deposit
-        transl(-0.9 , 0, 0.75)    % move to above deposit
+        depositLocation * transl(0, 0, 0.05),   % Move to above Deposit
+        depositLocation   % Move Down to deposit
+        % depositLocation * transl(0, 0, 0.05)    % Move up from deposit
     };
     
     % Initial guesses for each movement
-    initial_guesses = {Q1, Q1, Q1, Q2, Q2, Q2};
+    initial_guesses = {Q1, Q1, Q1, Q2, Q2};
 
     % Number of trajectory points
     t = 15;
@@ -243,4 +278,38 @@ function Scene = DobotPickupAndDeposit(d, Scene, canNumber)
         start_q = end_q;
     end
 
+end
+
+
+function Scene = cans_falling(Scene, canNumber)
+    speed = 0.9;      % Speed at which the can falls
+    dt = 0.01;        % Time step for simulation
+    distance = -0.5;  % The can will fall by 0.5 units in the Z direction
+    totalTime = abs(distance) / speed;  % Total time taken to fall the given distance
+    currentTime = 0;
+
+    if Scene.MovedByThor{canNumber} == 1
+        while currentTime < totalTime
+            % Debugging print statement
+            % fprintf('Falling can %d\n', canNumber);
+            % Update the position
+            Scene.CanPositions{canNumber}(3) = Scene.CanPositions{canNumber}(3) - speed*dt;
+
+            % Get the current can object vertices
+            canVertices = get(Scene.CanObjects{canNumber}, 'Vertices');
+
+            % Translate the vertices in the Z direction
+            trVerts = canVertices - repmat([0, 0, speed*dt], size(canVertices, 1), 1);
+
+            % Update the can's position in the scene using the translated vertices
+            set(Scene.CanObjects{canNumber}, 'Vertices', trVerts);
+            
+            pause(dt);
+            currentTime = currentTime + dt;
+        end
+        % After the can has fallen, set its status to 2
+        Scene.MovedByThor{canNumber} = 2;
+    else
+        % fprintf('NOT falling can %d. MovedByThor status: %d\n', canNumber, Scene.MovedByThor{canNumber});
+    end
 end
