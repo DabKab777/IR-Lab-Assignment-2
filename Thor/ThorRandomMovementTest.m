@@ -3,9 +3,9 @@ close all;
 clear all;
 
 % Create the Thor robot
-r = Thor( transl(0.2,0.2,0.2) );
+r = Thor;
 % workspace = [ 0, 2, 0, 2, 0, 1];
-m = DobotMagician;
+%m = DobotMagician;
 hold on;
 
 % Number of steps for the trajectory
