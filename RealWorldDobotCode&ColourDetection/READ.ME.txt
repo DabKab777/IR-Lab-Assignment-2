@@ -1,0 +1,145 @@
+READ.ME
+Code 
+
+1. Pre-requesites for Code functioning
+a) Have a Raspberry Pi-4 with ROS wrappers for the Dobot and Realsense cameras. Follow instructions here:
+	https://github.com/IntelRealSense/realsense-ros#ros1-and-ros2-legacy
+https://github.com/gapaul/dobot_magician_driver/wiki
+b) Have the ROS-toolbox installed on MATLAB
+
+c) Connecto to the Raspberry Pi via SSH. 
+
+d) launch ros with the following commands from ssh
+	for Dobot: 
+		roslaunch dobot_magician_driver dobot_magician.launch
+
+	for Realsense Camera:
+ 		docker exec  dev_container bash -c "source /opt/ros/noetic/setup.bash && roslaunch realsense2_camera rs_camera.launch align_depth:=true"
+
+e)for the detect HSV Function the Image processing toolbox for matlab is required
+
+
+
+EXPLANATION OF COLOUR DETECTION AND COORDINATE CONVERSION
+
+Colour detection and coordinate conversion are done within the DetectHSV and subsequent functions within this.
+
+An RGB colour image is taken in from the realsense D435 Camera from the ros topic  '/camera/color/image_raw'
+An Aligned Depth image is taken from the realsesne D435 Camera from the ros topic '/camera/aligned_depth_to_color/image_raw'
+camera info such as the focal lengths of the camera and prinicpal points from the ros topic '/camera/aligned_depth_to_color/camera_info'
+
+The ALgorithm is broken down into the following steps
+
+1. Convert the RGB Image to HSV (Hue,Saturation and Value) and slices each of these values into 3 arrays the same size of the original image 
+
+%%%%%%%%%
+
+    HSV = rgb2hsv(RGB); % converts the rgb image to hsv for better detection accuracy of colours
+    HUE = HSV(:,:,1); % slices the pixel dimensions into HUE,SATURATION AND BLUR
+    SAT = HSV(:,:,2);
+    VAL = HSV(:,:,3);
+
+%%%%%%%%%
+
+2. Based off predetermined values "from testing" the HUE values for red, green, blue as well as the saturation are used to perform bitmasking to filter out the red green and blue pixels in an image. These create binary image masks  of the red,green and blue colours from the inputted image where if a pixel is that colour it is white and if not black.
+%%%%%%%
+
+    %These values were determined through trial and error
+    SAT_TOL = [0.2,1] ;%saturation threshold values. pixel must have saturations values between these
+    BLUE = [0.5, 0.75]; % pixel must have blue between these HUE values
+    GREEN = [0.25,0.5]; %pixel must have green between these HUE values
+
+    RED = [0.03,0.97]; % pixel must have red colour >=0.95 or =< 0.05 
+
+    redMask = (HUE >= RED(1,2)) | (HUE <= RED(1,1)) & (SAT >=SAT_TOL(1,1) & SAT <=SAT_TOL(1,2));
+    blueMask = (HUE <= BLUE(1,2)) & (HUE >= BLUE(1,1))& (SAT >=SAT_TOL(1,1)&  SAT <=SAT_TOL(1,2)) ;
+    greenMask = (HUE <= GREEN(1,2)) & (HUE >= GREEN(1,1)) & (SAT >=SAT_TOL(1,1)&  SAT <=SAT_TOL(1,2));
+
+%%%%%%
+
+3. For each created colour mask morphological operations are applied to clean up the image and filter out noise. the end result of this is to just leave the detected blocks in the image for each mask colour. 
+%%%%%%
+    structuringElement = strel('square', 5); % a kernel with which we can perfrom morphological operations to remove nosie from the image
+    smallestAcceptableArea = 1000; % smallest area of pixels which won't be filtered out. 
+    redMask = cleanHSV(redMask,smallestAcceptableArea,structuringElement); 
+    blueMask = cleanHSV(blueMask,smallestAcceptableArea,structuringElement);
+    greenMask = cleanHSV(greenMask,smallestAcceptableArea,structuringElement);
+%%%%%%
+
+4. The centres of the blocks are determined by finding the mean x and y coordinates of the pixels for each colour. The end result of this is returning the centre of the detected block
+
+%%%%%%
+
+%function takes in the determined red , green and blue masks.
+% for each mask , the x,y coordinate of the centre of the block are found
+% by getting the mean pixel coordinate of the pixels for each colour.
+% this mean results in returning the centre of the blocks
+function[centroids] = getCentroids(masks,dim)
+        centroids = zeros(2,3);
+        lower = 1;
+        upper = dim(1,2);
+    for i = 1:3
+        masks(1:dim(1,1),lower:upper)
+        [y, x] = find( masks(1:dim(1,1),lower:upper)); % find function return the row and column value (pixel coordinates)
+        centroids(1,i) = round(mean(x)); 
+        centroids(2,i) = round(mean(y));
+        lower = upper;
+        upper = upper+ dim(1,2);
+    end 
+    return 
+end 
+
+%%%%%%
+
+ 
+5. the depth values of the centre of hte block is found by going to the same pixel coordinates in the depth image
+
+%%%%%
+
+depth = img_depth(centroids(1,1),centroids(2,1))    %finds the depth measurement of the red block
+
+%%%%%  
+
+6. Based off the formula in tutorial 2 of sensors and control (see below) the X and Y coordinates are determined for the centre of the block.
+    %these values were taken from the rostopic /camera/aligned_depth_to_color/camera_info
+    u = 650.2572021484375 %Principal point X 
+    v = 370.2181091308594 % Principal point Y 
+    f_x = 927.1157836914062/1000 % focal length X 
+    f_y = 925.2620239257812/1000 % focal length Y
+    X = (u-x_pixel)/f_x*Z
+    Y= (v-y_pixel)/f_y*Z
+NOTE: further x,y and z offsets were required to be added based off the custom camera mount used. for other implementations these offsets will need to be manually determined 
+and the values used in the code may not work for other implementations.
+
+%%%%%
+function[coords]  = get_3D_coords(x_pixel, y_pixel, depth_measurement)
+    % These measuredments are based a custom camera mount and the dimensions of the realsense D435 camera
+    % for a different camera mount and camera these values will need to
+    %changed.
+    X_effector_to_cam_offset=+ 0.02; 
+    Y_effector_to_cam_offset=0.065;
+    Z_effector_to_cam_offset=-0.055;
+    
+    %these values were taken from the rostopic /camera/aligned_depth_to_color/camera_info
+    u = 650.2572021484375 %Principal point X 
+    v = 370.2181091308594 % Principal point Y 
+    f_x = 927.1157836914062/1000 % focal length X 
+    f_y = 925.2620239257812/1000 % focal length Y\
+
+    Z = double(depth_measurement)/1000 % depth measureement 
+    X =  ((u-x_pixel)/f_x)*Z % from tutorial 2 of sensors and control to obtain X & Y coordinatoes
+    Y =  ((v-y_pixel)/f_y)*Z %
+    
+    coords = [X/1000+X_effector_to_cam_offset, Y/1000+Y_effector_to_cam_offset, Z+Z_effector_to_cam_offset ]
+
+return 
+end 
+%%%%
+
+
+7. The current end effector position + further offsets based on the used gripper is added to the determined camera coordinate. This is done by:
+a) obtaining the current end effector postion with the rostopic  '/dobot_magician/end_effector_poses'
+b) adding the manually measured offsets based off the gripper used 
+c) converting the camera coordinates to the robot's coordinate frame. Camera's X coordinate = Robot's Y cordinate, Camera's Y coordiante = Robot's X coordinate and the Camera's Z-coordinate = Robot's Z-coordinate*-1 
+
+
